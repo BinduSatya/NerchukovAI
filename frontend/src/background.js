@@ -1,67 +1,93 @@
-async function callToGemini(prompt) {
+async function getSolution({ Heading, Question, Code }) {
   try {
-    const response = await fetch("http://localhost:3000/gemini", {
+    const res = await fetch("http://localhost:3000/gemini/getSolution", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ Heading, Question, Code }),
     });
 
-    if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
-    const data = await response.json();
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const data = await res.json();
+    console.log("Solution: ", data);
     return data;
   } catch (error) {
-    console.error("Error calling backend:", error);
+    console.error("Error calling backend (solution):", error);
+    return { error: "Failed to get Gemini response" };
+  }
+}
+
+async function getHints({ Heading, Question, Code }) {
+  try {
+    const res = await fetch("http://localhost:3000/gemini/getHints", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ Heading, Question, Code }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const data = await res.json();
+    console.log("Hints: ", data);
+    return data;
+  } catch (error) {
+    console.error("Error calling backend (hints):", error);
     return { error: "Failed to get Gemini response" };
   }
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "GET_ANSWER" || message.type === "GET_HINT") {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs.length === 0) {
-        sendResponse({ text: "No active tab found." });
-        return;
-      }
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs.length === 0) {
+      sendResponse({ success: false, error: "No active tab found." });
+      return;
+    }
 
-      if (tabs.length > 0) {
-        chrome.tabs.sendMessage(
-          tabs[0].id,
-          { type: "SCRAPE_DATA" },
-          async (response) => {
-            if (chrome.runtime.lastError) {
-              sendResponse({
-                text: "Error: " + chrome.runtime.lastError.message,
-              });
-              return;
-            }
+    chrome.tabs.sendMessage(
+      tabs[0].id,
+      { type: "SCRAPE_DATA" },
+      async (response) => {
+        if (chrome.runtime.lastError) {
+          console.log("Error in scrapeing data", chrome.runtime.lastError);
+          sendResponse({
+            success: false,
+            error: chrome.runtime.lastError.message,
+          });
+          return;
+        }
 
-            try {
-              const { Heading, Question, Code } = response;
-              console.log("From content script:", Heading, Question, Code);
+        try {
+          const { Heading, Question, Code } = response || {};
+          console.log("Scraped from content script:", Heading, Question, Code);
 
-              let prompt;
-              if (message.type === "GET_ANSWER") {
-                prompt = `You are a helpful code assistant. Read the following question carefully and provide a complete answer:\n\n The heading of the question is ${Heading} and the question is ${Question}\n\n Read the following code carefully:\n\n ${Code} and complete the code in the given language and just return the code.`;
-              }
-              if (message.type === "GET_HINT") {
-                prompt = `You are a helpful code assistant. Read the following question carefully and provide a complete answer:\n\n The heading of the question is ${Heading} and the question is ${Question}\n\n Read the following code carefully:\n\n ${Code} and give 3 hints to complete the code, but don't directly give me the code.`;
-              }
-
-              const geminiResponse = await callToGemini(prompt);
-              console.log("Gemini Response:", geminiResponse);
-
-              sendResponse({
-                success: true,
-                data: geminiResponse?.geminiResponse || "No response",
-              });
-            } catch (error) {
-              console.error("Error in background:", error);
-              sendResponse({ success: false, error: error.message });
-            }
+          if (message.type === "GET_QUESTION") {
+            console.log("getting question", { Heading, Question });
+            sendResponse({
+              success: true,
+              data: { Heading, Question },
+            });
+          } else if (message.type === "GET_ANSWER") {
+            console.log("getting answer");
+            const solution = await getSolution({ Heading, Question, Code });
+            console.log("Solution received:", solution);
+            sendResponse({
+              success: true,
+              data: solution.geminiSolution || solution,
+            });
+          } else if (message.type === "GET_HINT") {
+            console.log("getting hints");
+            const hints = await getHints({ Heading, Question, Code });
+            console.log("Hints received:", hints);
+            sendResponse({
+              success: true,
+              data: hints.geminiHints || hints,
+            });
           }
-        );
+        } catch (error) {
+          console.error("Error in background handler:", error);
+          sendResponse({ success: false, error: error.message });
+        }
       }
-    });
-    return true;
-  }
+    );
+  });
+
+  return true;
 });

@@ -3,6 +3,12 @@
   "name": "Gemini Extension",
   "version": "1.0",
   "permissions": ["scripting", "activeTab", "tabs"],
+  "description": "A Chrome extension to interact with Gemini API",
+  "icons": {
+    "16": "vite.svg",
+    "48": "vite.svg",
+    "128": "vite.svg"
+  },
   "background": {
     "service_worker": "background.js",
     "type": "module"

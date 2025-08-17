@@ -1,5 +1,6 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "SCRAPE_DATA") {
+    console.log("contents > scrapeData");
     try {
       const questionHeading =
         document.getElementsByClassName("text-title-large")[0]?.innerText ||
@@ -15,10 +16,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         .map((child) => child.innerText.trim())
         .join(" ");
 
+      console.log("Scraped data:", {
+        Heading: questionHeading,
+        Question: questionText,
+        Code: texts,
+      });
+
+      console.log("contents > Scraped data:", {
+        Heading: questionHeading,
+        Question: questionText,
+        Code: texts,
+      });
+
       sendResponse({
-        Heading: `Heading: ${questionHeading}`,
-        Question: `Question: ${questionText}`,
-        Code: `Code: ${texts}`,
+        Heading: `${questionHeading}`,
+        Question: `${questionText}`,
+        Code: `${texts}`,
       });
     } catch (error) {
       sendResponse({ text: "Error extracting data: " + error.message });
