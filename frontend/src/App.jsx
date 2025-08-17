@@ -12,6 +12,7 @@ function App() {
   const [currentHintIndex, setCurrentHintIndex] = useState(0);
   const [error, setError] = useState("");
   const [view, setView] = useState("idle");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setLoadingGetQuestion(true);
@@ -104,12 +105,12 @@ function App() {
   const containerStyle = {
     padding: "1rem",
     width: "360px",
-    height: view === "idle" ? "400px" : "auto",
     boxSizing: "border-box",
     fontFamily:
       "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial",
     display: "flex",
     flexDirection: "column",
+    alignItems: "flex-start",
     overflow: "hidden",
   };
 
@@ -127,6 +128,7 @@ function App() {
     border: "1px solid rgba(255,255,255,0.04)",
     flex: 1,
     minHeight: 0,
+    position: "relative",
   };
 
   const buttonStyle = {
@@ -136,6 +138,7 @@ function App() {
     cursor: "pointer",
     background: "#2563eb",
     color: "white",
+    fontSize: 13,
   };
 
   const secondaryButton = {
@@ -144,13 +147,31 @@ function App() {
   };
 
   const neutralButton = {
-    ...secondaryButton,
+    ...buttonStyle,
     background: "#2b3440",
+  };
+
+  const copyToClipboard = async () => {
+    const text =
+      output ||
+      (view === "solution"
+        ? solution
+        : hints && hints[currentHintIndex]
+        ? hints[currentHintIndex]
+        : "");
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch (err) {
+      console.error("Copy failed:", err);
+    }
   };
 
   return (
     <>
-      <div style={containerStyle}>
+      <div style={{ ...containerStyle, height: "350px" }}>
         <h1 style={{ margin: 0 }}>NerchukovAI</h1>
         <p style={{ fontSize: "0.9rem", color: "#666", marginTop: "6px" }}>
           AI hints and solutions for your coding problems
@@ -240,18 +261,16 @@ function App() {
           </div>
         )}
 
-        {/* Panel area: stable height inside fixed container */}
         <div
           style={{
             marginTop: "12px",
             display: "flex",
             flexDirection: "column",
-            flex: 1, // occupy remaining vertical space
-            minHeight: 0, // important for flex children overflow
+            flex: 1,
+            minHeight: 0,
           }}
         >
           {view === "idle" ? (
-            // placeholder with no dark background but same spacing inside fixed container
             <div
               style={{
                 borderRadius: "8px",
@@ -267,16 +286,73 @@ function App() {
               &nbsp;
             </div>
           ) : (
-            // actual panel with dark background when showing content
             <div style={panelStyle}>
-              {output ||
-                (view === "solution"
-                  ? "No solution available"
-                  : "No hint available")}
+              <div style={{ paddingTop: 0 }}>
+                {output ||
+                  (view === "solution"
+                    ? "No solution available"
+                    : "No hint available")}
+              </div>
             </div>
           )}
 
-          <div style={{ marginTop: "8px", textAlign: "right" }}>
+          <div
+            style={{
+              marginTop: "8px",
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 8,
+            }}
+          >
+            {view !== "idle" && view !== "hint" && (
+              <button
+                onClick={copyToClipboard}
+                disabled={!output && view === "idle"}
+                aria-label="Copy panel content"
+                title="Copy"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "6px 8px",
+                  borderRadius: 6,
+                  border: "none",
+                  background: copied ? "#10b981" : "#111827",
+                  color: "#e6eef8",
+                  cursor: "pointer",
+                  fontSize: 12,
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M16 4H20V20H8V16"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <rect
+                    x="4"
+                    y="2"
+                    width="12"
+                    height="16"
+                    rx="2"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            )}
+
             {view !== "idle" ? (
               <button
                 onClick={hidePanel}
