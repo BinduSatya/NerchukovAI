@@ -11,6 +11,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
+app.post("/", (req, res) => {
+  res.status(200).json({ response: "Hello World" });
+});
+
 app.post("/gemini/getSolution", async (req, res) => {
   try {
     const { Heading, Question, Code } = req.body;
