@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && copy src\\content.js dist\\content.js && copy src\\background.js dist\\background.js && copy public\\manifest.json dist\\manifest.json",
+    "build": "vite build && copy src\\content.js dist\\content.js && copy src\\background.js dist\\background.js && copy public\\manifest.json dist\\manifest.json && xcopy public\\icons dist\\assets /E /I /Y",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -23,6 +23,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
     "react-scripts": "^5.0.1",
-    "vite": "^7.1.2"
+    "vite": "^7.1.2",
+    "copyfiles": "^2.4.1"
   }
 }

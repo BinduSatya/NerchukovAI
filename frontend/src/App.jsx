@@ -13,12 +13,15 @@ function App() {
   const [error, setError] = useState("");
   const [view, setView] = useState("idle");
   const [copied, setCopied] = useState(false);
+  const [invalid, setInvalid] = useState(false);
 
   useEffect(() => {
     setLoadingGetQuestion(true);
     chrome.runtime.sendMessage({ type: "GET_QUESTION" }, (response) => {
       if (chrome.runtime.lastError) {
         setError("Error in get Question: " + chrome.runtime.lastError.message);
+      } else if (response === "*") {
+        setInvalid(true);
       } else if (response?.success === true) {
         setQuestion(response?.data.Question);
         setHeading(response?.data.Heading);
@@ -32,6 +35,8 @@ function App() {
     chrome.runtime.sendMessage({ type: "GET_ANSWER" }, (response) => {
       if (chrome.runtime.lastError) {
         setError("Error in get Answer: " + chrome.runtime.lastError.message);
+      } else if (response === "*") {
+        setInvalid(true);
       } else if (response.success === true) {
         setSolution(response.data);
       } else {
@@ -45,6 +50,8 @@ function App() {
       if (chrome.runtime.lastError) {
         setError("Error in get Hint: " + chrome.runtime.lastError.message);
         setHints([]);
+      } else if (response === "*") {
+        setInvalid(true);
       } else if (response.success === true) {
         const data = response.data;
         const normalized = Array.isArray(data) ? data : [data];
@@ -172,197 +179,214 @@ function App() {
   return (
     <>
       <div style={{ ...containerStyle, height: "350px" }}>
-        <h1 style={{ margin: 0 }}>NerchukovAI</h1>
+        <h1 style={{ margin: 0 }}>
+          NerchukovAI{" "}
+          <img
+            width="50"
+            height="50"
+            src="https://img.icons8.com/scribby/50/mind-map.png"
+            alt="mind-map"
+          />
+        </h1>
+
         <p style={{ fontSize: "0.9rem", color: "#666", marginTop: "6px" }}>
           AI hints and solutions for your coding problems
         </p>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
-
-        {!loadingGetQuestion && heading && question && (
+        {invalid ? (
+          <span style={{ color: "red", marginLeft: "8px" }}>
+            Not Allowed in this Page.
+          </span>
+        ) : (
           <>
-            <h2 style={{ margin: "12px 0 6px 0" }}>{heading}</h2>
-          </>
-        )}
+            {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <div
-          style={{
-            marginTop: "8px",
-            display: "flex",
-            gap: "8px",
-            alignItems: "center",
-          }}
-        >
-          {view === "idle" && (
-            <>
-              <button
-                onClick={showSolution}
-                disabled={loadingGetAnswer || !solution}
-                style={buttonStyle}
-              >
-                {loadingGetAnswer ? "Loading..." : "Solution"}
-              </button>
-
-              <button
-                onClick={showFirstHint}
-                disabled={loadingGetHint || hints.length === 0}
-                style={secondaryButton}
-              >
-                {loadingGetHint ? "Loading..." : "Hint"}
-              </button>
-            </>
-          )}
-
-          {view === "solution" && (
-            <>
-              <button onClick={showSolution} disabled style={buttonStyle}>
-                Solution
-              </button>
-
-              <button
-                onClick={showFirstHint}
-                disabled={loadingGetHint || hints.length === 0}
-                style={secondaryButton}
-              >
-                Hint
-              </button>
-            </>
-          )}
-
-          {view === "hint" && (
-            <>
-              <button
-                onClick={showSolution}
-                disabled={loadingGetAnswer}
-                style={buttonStyle}
-              >
-                Solution
-              </button>
-
-              {currentHintIndex > 0 && (
-                <button onClick={prevHint} style={neutralButton}>
-                  Previous
-                </button>
-              )}
-
-              {currentHintIndex < maxVisibleIndex && (
-                <button onClick={nextHint} style={secondaryButton}>
-                  Next
-                </button>
-              )}
-            </>
-          )}
-        </div>
-
-        {view === "hint" && hints.length > 0 && (
-          <div style={{ marginTop: "8px", color: "#d3d3d3" }}>
-            Hint {Math.min(currentHintIndex + 1, maxHintNumber)} of{" "}
-            {maxHintNumber}
-          </div>
-        )}
-
-        <div
-          style={{
-            marginTop: "12px",
-            display: "flex",
-            flexDirection: "column",
-            flex: 1,
-            minHeight: 0,
-          }}
-        >
-          {view === "idle" ? (
-            <div
-              style={{
-                borderRadius: "8px",
-                background: "transparent",
-                padding: "12px",
-                boxSizing: "border-box",
-                height: "100%",
-                color: "transparent",
-                userSelect: "none",
-              }}
-              aria-hidden="true"
-            >
-              &nbsp;
-            </div>
-          ) : (
-            <div style={panelStyle}>
-              <div style={{ paddingTop: 0 }}>
-                {output ||
-                  (view === "solution"
-                    ? "No solution available"
-                    : "No hint available")}
-              </div>
-            </div>
-          )}
-
-          <div
-            style={{
-              marginTop: "8px",
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: 8,
-            }}
-          >
-            {view !== "idle" && view !== "hint" && (
-              <button
-                onClick={copyToClipboard}
-                disabled={!output && view === "idle"}
-                aria-label="Copy panel content"
-                title="Copy"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "6px 8px",
-                  borderRadius: 6,
-                  border: "none",
-                  background: copied ? "#10b981" : "#111827",
-                  color: "#e6eef8",
-                  cursor: "pointer",
-                  fontSize: 12,
-                }}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M16 4H20V20H8V16"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <rect
-                    x="4"
-                    y="2"
-                    width="12"
-                    height="16"
-                    rx="2"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
+            {!loadingGetQuestion && heading && question && (
+              <>
+                <h2 style={{ margin: "12px 0 6px 0" }}>{heading}</h2>
+              </>
             )}
 
-            {view !== "idle" ? (
-              <button
-                onClick={hidePanel}
-                style={{ ...secondaryButton, padding: "6px 8px" }}
+            <div
+              style={{
+                marginTop: "8px",
+                display: "flex",
+                gap: "8px",
+                alignItems: "center",
+              }}
+            >
+              {view === "idle" && (
+                <>
+                  <button
+                    onClick={showSolution}
+                    disabled={loadingGetAnswer || !solution}
+                    style={buttonStyle}
+                  >
+                    {loadingGetAnswer ? "Loading..." : "Solution"}
+                  </button>
+
+                  <button
+                    onClick={showFirstHint}
+                    disabled={loadingGetHint || hints.length === 0}
+                    style={secondaryButton}
+                  >
+                    {loadingGetHint ? "Loading..." : "Hint"}
+                  </button>
+                </>
+              )}
+
+              {view === "solution" && (
+                <>
+                  <button onClick={showSolution} disabled style={buttonStyle}>
+                    Solution
+                  </button>
+
+                  <button
+                    onClick={showFirstHint}
+                    disabled={loadingGetHint || hints.length === 0}
+                    style={secondaryButton}
+                  >
+                    Hint
+                  </button>
+                </>
+              )}
+
+              {view === "hint" && (
+                <>
+                  <button
+                    onClick={showSolution}
+                    disabled={loadingGetAnswer}
+                    style={buttonStyle}
+                  >
+                    Solution
+                  </button>
+
+                  {currentHintIndex > 0 && (
+                    <button onClick={prevHint} style={neutralButton}>
+                      Previous
+                    </button>
+                  )}
+
+                  {currentHintIndex < maxVisibleIndex && (
+                    <button onClick={nextHint} style={secondaryButton}>
+                      Next
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {view === "hint" && hints.length > 0 && (
+              <div style={{ marginTop: "8px", color: "#d3d3d3" }}>
+                Hint {Math.min(currentHintIndex + 1, maxHintNumber)} of{" "}
+                {maxHintNumber}
+              </div>
+            )}
+
+            <div
+              style={{
+                marginTop: "12px",
+                display: "flex",
+                flexDirection: "column",
+                flex: 1,
+                minHeight: 0,
+              }}
+            >
+              {view === "idle" ? (
+                <div
+                  style={{
+                    borderRadius: "8px",
+                    background: "transparent",
+                    padding: "12px",
+                    boxSizing: "border-box",
+                    height: "100%",
+                    color: "transparent",
+                    userSelect: "none",
+                  }}
+                  aria-hidden="true"
+                >
+                  &nbsp;
+                </div>
+              ) : (
+                <div style={panelStyle}>
+                  <div style={{ paddingTop: 0 }}>
+                    {output ||
+                      (view === "solution"
+                        ? "No solution available"
+                        : "No hint available")}
+                  </div>
+                </div>
+              )}
+
+              <div
+                style={{
+                  marginTop: "8px",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 8,
+                }}
               >
-                Hide
-              </button>
-            ) : null}
-          </div>
-        </div>
+                {view !== "idle" && view !== "hint" && (
+                  <button
+                    onClick={copyToClipboard}
+                    disabled={!output && view === "idle"}
+                    aria-label="Copy panel content"
+                    title="Copy"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "6px 8px",
+                      borderRadius: 6,
+                      border: "none",
+                      background: copied ? "#10b981" : "#111827",
+                      color: "#e6eef8",
+                      cursor: "pointer",
+                      fontSize: 12,
+                    }}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M16 4H20V20H8V16"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <rect
+                        x="4"
+                        y="2"
+                        width="12"
+                        height="16"
+                        rx="2"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                )}
+
+                {view !== "idle" ? (
+                  <button
+                    onClick={hidePanel}
+                    style={{ ...secondaryButton, padding: "6px 8px" }}
+                  >
+                    Hide
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );

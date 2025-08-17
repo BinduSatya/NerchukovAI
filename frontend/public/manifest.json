@@ -5,9 +5,9 @@
   "permissions": ["scripting", "activeTab", "tabs"],
   "description": "A Chrome extension to interact with Gemini API",
   "icons": {
-    "16": "vite.svg",
-    "48": "vite.svg",
-    "128": "vite.svg"
+    "16": "assets/mindmap16.png",
+    "48": "assets/mindmap50.png",
+    "128": "assets/mindmap100.png"
   },
   "background": {
     "service_worker": "background.js",
@@ -18,7 +18,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["https://leetcode.com/problems/*"],
       "js": ["content.js"]
     }
   ]
