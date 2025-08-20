@@ -1,6 +1,6 @@
 # NerchukovAI — Chrome Extension
 
-NerchukovAI is a Chrome extension popup that scrapes coding problems (targeting LeetCode problem pages), sends the scraped data to a local backend which calls Google Gemini, and displays either a full solution or up to 10 guided hints in the popup.
+This is a Chrome extension helps developers quickly solve coding problems on the web using Google's Gemini AI. It automatically reads the question, heading, and any given starter code from the active tab, then sends it to Gemini to either generate a complete solution or provide helpful hints.
 
 ---
 
